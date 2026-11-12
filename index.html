@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>名間分校英檢成績總覽</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&family=DM+Sans:opsz,wght@9..40,500;9..40,700&display=swap">
+<style>
+/* Layout: 紙本成績簿 — 鯨魚小插畫標頭 → 三個分頁（11/7 模擬考 / 練習成績 / 進退步）→ 共用班級篩選 → 各分頁內容；單一淺色紙感主題 */
+:root{
+  --paper:#f6f1e7; --card:#fffdf8; --ink:#2f302c; --muted:#7c786d; --line:#e5ddcd; --line-soft:#efe9dd;
+  --sage:#7f9c85; --sage-deep:#4e6f57; --sage-soft:#e6eee4;
+  --terra:#bd6a52; --terra-soft:#f7e4dc; --ochre:#b8893c; --ochre-soft:#f6ecd6;
+  --slate:#5f7d96; --slate-soft:#e4ebf1; --sea:#46707f;
+  --fail:var(--terra); --warn:var(--ochre); --b70:var(--slate); --b80:var(--sage); --b90:var(--sage-deep); --abs:#9a958a;
+  --f-title:"LXGW WenKai TC","Kaiti TC","STKaiti",serif;
+  --f-head:"Noto Serif TC","Songti TC",serif;
+  --f-body:"Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --f-num:"DM Sans","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;
+  background-image:radial-gradient(rgba(120,100,70,.05) 1px,transparent 1.2px);background-size:5px 5px}
+.wrap{max-width:1080px;margin:0 auto;padding-block:30px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:22px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+
+header{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+header svg{width:96px;height:auto;flex:none}
+header h1{margin:0;font-family:var(--f-title);font-weight:700;font-size:2rem;letter-spacing:.06em;line-height:1.25;text-wrap:balance}
+header p{margin:2px 0 0;color:var(--muted);font-size:.9rem}
+.htxt{min-width:0}
+
+nav{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+nav a{color:var(--muted);text-decoration:none;padding:10px 16px;font-family:var(--f-head);font-weight:600;font-size:1.02rem;border-bottom:2.5px solid transparent;margin-bottom:-1px;white-space:nowrap}
+nav a:hover{color:var(--ink)}
+nav a.on{color:var(--ink);border-bottom-color:var(--sage-deep)}
+nav a:focus-visible{outline:2px solid var(--sage);outline-offset:2px;border-radius:4px}
+
+.filters{display:flex;flex-direction:column;gap:10px}
+.frow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.flabel{font-size:.78rem;color:var(--muted);letter-spacing:.08em;margin-right:4px;min-width:3em}
+.chip{all:unset;cursor:pointer;padding:4px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:.86rem;white-space:nowrap;transition:background .15s,border-color .15s}
+.chip small{color:var(--muted);margin-left:4px;font-size:.75rem}
+.chip:hover{border-color:var(--sage)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:var(--card)}
+.chip.on small{color:inherit;opacity:.7}
+.chip:focus-visible{outline:2px solid var(--sage);outline-offset:2px}
+#clsRow{gap:8px}
+#clsRow .chip{padding:9px 20px;font-size:1.05rem;font-weight:500;border-radius:12px;min-width:76px;text-align:center}
+#clsRow .chip small{font-size:.8rem}
+#clsRow .flabel{font-size:.85rem}
+@media (max-width:560px){#clsRow .chip{padding:8px 14px;font-size:.98rem;min-width:0}}
+#q{font:inherit;font-size:.88rem;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:190px;max-width:100%;margin-left:auto}
+#q:focus{outline:2px solid var(--sage);outline-offset:0}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.card>h2,.sec-h{margin:0;padding:14px 18px;font-family:var(--f-head);font-size:1.05rem;font-weight:700;display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--line-soft)}
+.card>h2 span,.sec-h span{font-family:var(--f-body);font-weight:400;color:var(--muted);font-size:.82rem}
+.pad{padding:16px 18px}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{padding:8px 12px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line-soft)}
+th{font-size:.76rem;color:var(--muted);font-weight:500;letter-spacing:.04em;background:#fbf8f1}
+th.sort{cursor:pointer;user-select:none}
+th[aria-sort="descending"]::after{content:" ↓"} th[aria-sort="ascending"]::after{content:" ↑"}
+.r{text-align:right} .c{text-align:center}
+tbody tr:last-child td{border-bottom:none}
+tr.click{cursor:pointer} tr.click:hover td{background:#faf6ec}
+.cn{font-weight:500} .en{color:var(--muted);margin-left:6px}
+.clsTag{font-family:var(--f-num);font-weight:700;color:var(--sea);font-size:.82rem}
+.muted{color:var(--muted)} .tiny{font-size:.78rem}
+.foot td{font-weight:700;background:#fbf8f1}
+
+.band{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.76rem;font-weight:500;border:1px solid currentColor}
+.c-fail{color:var(--fail)} .c-warn{color:var(--warn)} .c-b70{color:var(--b70)} .c-b80{color:var(--b80)} .c-b90{color:var(--b90)} .c-abs{color:var(--abs)}
+.mk{display:inline-block;margin-left:6px;font-size:.72rem;color:var(--sea);background:#e6eef0;border-radius:4px;padding:0 6px}
+
+/* distribution strip */
+.dist{display:flex;height:14px;border-radius:999px;overflow:hidden;background:var(--line-soft)}
+.dist i{display:block;height:100%}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin-top:14px}
+.lg{all:unset;cursor:pointer;border:1px solid var(--line);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;gap:0;background:var(--card)}
+.lg:hover{border-color:var(--sage)} .lg:focus-visible{outline:2px solid var(--sage);outline-offset:2px}
+.lg.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.lg .t{font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+.lg .t::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--dot)}
+.lg b{font-family:var(--f-num);font-size:1.5rem;line-height:1.25}
+.lg small{color:var(--muted);font-size:.74rem}
+
+.notice{border:1px dashed var(--terra);background:#fdf6f1;border-radius:12px;padding:12px 16px;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline}
+.notice b{font-family:var(--f-head);color:var(--terra)}
+.notice span{font-size:.88rem}
+.notice.done{border-color:var(--sage);background:var(--sage-soft)} .notice.done b{color:var(--sage-deep)}
+
+/* score cells */
+.sc{font-family:var(--f-num);font-variant-numeric:tabular-nums;text-align:center}
+.s-fail{color:var(--fail);background:var(--terra-soft);font-weight:700}
+.s-warn{color:var(--warn);font-weight:700}
+.s-b90{color:var(--b90);font-weight:700}
+.s-na{color:var(--abs);font-family:var(--f-body);font-size:.74rem}
+.s-mock{border-left:2px solid var(--line);font-weight:700}
+.colh{line-height:1.3;text-align:center}
+.colh b{display:block;color:var(--ink);font-weight:500;font-size:.8rem}
+.grid-wrap{display:flex;flex-direction:column;gap:18px}
+
+.up{color:var(--sage-deep);font-weight:700} .down{color:var(--terra);font-weight:700} .flat{color:var(--muted)}
+.spark{display:block}
+
+.groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;padding:4px 18px 18px}
+.groups div{border:1px solid var(--line-soft);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;min-width:0;background:#fcfaf4}
+.groups span{font-size:.85rem;line-height:1.7}
+.verdict{margin:14px 18px 0;padding:10px 14px;border-radius:10px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;font-family:var(--f-head);font-weight:700}
+.verdict small{font-family:var(--f-body);font-weight:400;color:var(--ink);font-size:.85rem}
+.v-up{background:var(--sage-soft);color:var(--sage-deep)} .v-down{background:var(--terra-soft);color:var(--terra)} .v-flat{background:var(--line-soft);color:var(--ink)}
+.chart{padding:6px 10px 0} .chart svg{width:100%;height:auto;display:block}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.note{font-size:.8rem;color:var(--muted);margin:0;line-height:1.7}
+
+/* dialog */
+.ov{position:fixed;inset:0;background:rgba(47,48,44,.35);display:flex;align-items:center;justify-content:center;z-index:50;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.ov[hidden]{display:none}
+.dlg{background:var(--card);border-radius:16px;width:min(680px,100%);max-height:100%;overflow:auto;box-shadow:0 24px 60px rgba(47,48,44,.22)}
+.dlg-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:18px 20px 4px}
+.dlg-h h3{margin:0;font-family:var(--f-head);font-size:1.3rem}
+.dlg-h p{margin:2px 0 0;color:var(--muted);font-size:.85rem}
+.x{all:unset;cursor:pointer;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:1.3rem;color:var(--muted)}
+.x:hover{background:var(--line-soft)} .x:focus-visible{outline:2px solid var(--sage)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px 20px 6px}
+.stat{border:1px solid var(--line-soft);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column}
+.stat span{font-size:.74rem;color:var(--muted)} .stat b{font-family:var(--f-num);font-size:1.2rem}
+.hist{padding:8px 20px 20px}
+.hist table td,.hist table th{padding:6px 10px}
+[hidden]{display:none!important} section[hidden]{display:none} .filters[hidden]{display:none}
+nav a.nav-entry{margin-left:auto;color:var(--sage-deep)}
+nav a.nav-entry.on{border-bottom-color:var(--terra);color:var(--ink)}
+.form{display:flex;flex-direction:column;gap:14px}
+.frm{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.frm label{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--muted);min-width:0}
+.frm label.grow{flex:1 1 220px}
+.frm label.chk{flex-direction:row;align-items:center;gap:6px;font-size:.92rem;color:var(--ink);padding-bottom:9px;cursor:pointer}
+.frm input:not([type=checkbox]),.frm select{font:inherit;font-size:1rem;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;min-width:0}
+.frm input:not([type=checkbox]){width:92px}
+.frm label.grow input,.frm label.grow select{width:100%}
+.frm select{min-width:110px}
+.frm input:focus,.frm select:focus,.entry-tbl input:focus{outline:2px solid var(--sage);outline-offset:0;border-color:var(--sage)}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--sage-deep)}
+.btn{all:unset;cursor:pointer;background:var(--sage-deep);color:var(--card);font-weight:700;padding:10px 22px;border-radius:10px;font-size:.98rem}
+.btn:hover{background:#3f5c47} .btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.sm{padding:4px 12px;font-size:.82rem;font-weight:500}
+.btn.danger{background:transparent;color:var(--terra);border:1px solid var(--terra-soft)}
+.btn.danger.arm{background:var(--terra);color:var(--card)}
+.act{align-items:center}
+.msg{font-size:.9rem;color:var(--sage-deep);font-weight:500} .msg.err{color:var(--terra)}
+.hint{margin:0;font-size:.82rem;color:var(--muted)} .hint:empty{display:none}
+.entry-tbl td{padding:5px 12px} .entry-tbl input{font:inherit;font-family:var(--f-num);width:84px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);text-align:center}
+.entry-tbl .prev{color:var(--muted);font-size:.8rem}
+.dbdot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--terra);margin-left:4px;vertical-align:middle}
+.tag{display:inline-block;font-size:.72rem;border-radius:4px;padding:0 6px;background:var(--sage-soft);color:var(--sage-deep)}
+.tag.p{background:var(--slate-soft);color:var(--slate)}
+@media (max-width:560px){header h1{font-size:1.55rem} header svg{width:72px} .stats{grid-template-columns:repeat(2,1fr)} #q{margin-left:0;width:100%}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <svg viewBox="0 0 130 78" aria-hidden="true">
+      <g fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M60 20 C58 12 53 8 47 8 M60 20 C61 11 66 7 72 7 M60 20 L60 9" stroke="var(--sea)"/>
+        <path d="M16 46 C15 30 34 20 58 21 C82 22 96 33 98 45 C106 41 112 33 114 26 C117 35 113 45 106 49 C112 51 117 57 115 62 C108 58 101 56 97 56 C89 64 72 66 54 64 C30 62 17 57 16 46 Z" fill="var(--sage-soft)"/>
+        <path d="M22 52 C36 58 60 60 84 56" stroke="var(--sage)"/>
+        <path d="M30 47 q5 4 10 0"/>
+        <circle cx="30" cy="40" r="1.6" fill="var(--ink)"/>
+        <path d="M6 72 q7 -5 14 0 t14 0 t14 0 t14 0 t14 0 t14 0 t14 0 t14 0" stroke="var(--sea)" stroke-width="1.3"/>
+      </g>
+    </svg>
+    <div class="htxt">
+      <h1>名間分校英檢成績總覽</h1>
+      <p id="sum"></p>
+    </div>
+  </header>
+
+  <nav>
+    <a href="#mock" data-v="mock">11/7 模擬考</a>
+    <a href="#practice" data-v="practice">練習成績</a>
+    <a href="#progress" data-v="progress">進退步</a>
+    <a href="#entry" data-v="entry" class="nav-entry">＋ 輸入成績</a>
+  </nav>
+
+  <div class="filters" id="filters">
+    <div class="frow" id="clsRow"></div>
+    <div class="frow" id="yrRow"></div>
+  </div>
+
+  <!-- 11/7 模擬考 -->
+  <section id="v-mock" class="grid-wrap">
+    <div class="card"><div class="pad">
+      <div class="dist" id="dist"></div>
+      <div class="legend" id="legend"></div>
+    </div></div>
+    <div id="todo"></div>
+    <div class="card">
+      <h2 id="listTitle">全部學生 <span></span></h2>
+      <div class="scroll"><table>
+        <thead><tr>
+          <th data-k="cls" class="sort">班級</th><th data-k="lv" class="sort">級數</th><th data-k="name" class="sort">姓名</th>
+          <th data-k="l" class="sort r">聽力</th><th data-k="r" class="sort r">閱讀</th><th data-k="t" class="sort r" aria-sort="descending">總分</th><th data-k="cat" class="sort">分類</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table></div>
+    </div>
+    <div class="card" id="byClassCard">
+      <h2>各班分布 <span>點班級可篩選</span></h2>
+      <div class="scroll"><table id="byClass"></table></div>
+    </div>
+    <p class="note">及格 60 分。H6 級數的聽力＋閱讀與總分不同，以系統總分為準。點有練習紀錄的學生可看個人成績曲線。</p>
+  </section>
+
+  <!-- 練習成績 -->
+  <section id="v-practice" class="grid-wrap" hidden>
+    <div id="yrSummary"></div>
+    <div id="grids" class="grid-wrap"></div>
+    <p class="note">分數 60 以下標紅底、60–69 標黃字、90 以上標綠字。欄位依練習日期排序；「11/7」欄是模擬考成績。</p>
+  </section>
+
+  <!-- 輸入成績 -->
+  <section id="v-entry" class="grid-wrap" hidden>
+    <div class="notice done" id="dbNote"><b>連線中…</b><span>正在連上成績資料庫</span></div>
+
+    <div class="card">
+      <h2>模擬考／補考成績 <span>整班一次輸入總分；只會存有填或有改的學生</span></h2>
+      <div class="pad form">
+        <div class="frm">
+          <label>班級<select id="fmCls"></select></label>
+          <label>日期<input id="fmD" autocomplete="off" placeholder="11/12"></label>
+        </div>
+        <p class="hint">待補考的學生排在最前面，「補考」會自動勾選。已經有成績的學生會先填好目前分數，改了才會存。</p>
+        <div class="scroll"><table class="entry-tbl" id="fmTbl"></table></div>
+        <div class="frm act"><button class="btn" id="fmSave">儲存這班成績</button><span class="msg" id="fmMsg"></span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>練習成績 <span>整班一次輸入；空白＝沒考，也可以打「請假」等文字</span></h2>
+      <div class="pad form">
+        <div class="frm">
+          <label>班級<select id="fpCls"></select></label>
+          <label>日期<input id="fpD" autocomplete="off" placeholder="11/12"></label>
+          <label>考卷<select id="fpPaper"></select></label>
+          <label class="grow" id="fpCustomL" hidden>考卷名稱<input id="fpCustom" autocomplete="off" placeholder="例如 U7 SP、Sentence Pattern 3"></label>
+        </div>
+        <p class="hint" id="fpEditing" hidden></p>
+        <div class="scroll"><table class="entry-tbl" id="fpTbl"></table></div>
+        <div class="frm act"><button class="btn" id="fpSave">儲存這次練習</button><button class="btn ghost" id="fpCancel" hidden>取消修改</button><span class="msg" id="fpMsg"></span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>網頁輸入的紀錄 <span>試算表和截圖匯入的成績不在這裡</span></h2>
+      <div class="scroll"><table id="entryList"></table></div>
+    </div>
+  </section>
+
+  <!-- 進退步 -->
+  <section id="v-progress" class="grid-wrap" hidden>
+    <div id="classTrend"></div>
+    <div class="card">
+      <h2>各班進退步 <span>11/7 模擬考平均 − 11/7 前練習平均</span></h2>
+      <div class="scroll"><table id="progTable"></table></div>
+    </div>
+    <div class="card">
+      <h2 id="pgTitle">每位學生 <span></span></h2>
+      <div class="scroll"><table id="pgStu"></table></div>
+    </div>
+    <p class="note">進退步 = 11/7 模擬考總分 − 11/7 之前的練習平均；差 3 分以內算持平。11/7 之後的練習和純聽力卷只畫在曲線上，不列入平均。</p>
+  </section>
+</div>
+
+<div class="ov" id="ov" hidden><div class="dlg" role="dialog" aria-modal="true" id="dlgBody"></div></div>
+
+<script>
+const RAW = {
+ "H1|K2":"李中博,Rano,46,36,82;謝采庭,Tina,46,26,72",
+ "H1B|K2":"王俐茜,Lily,28,20,48;吳芷妡,Celine,42,40,82;吳梓榆,Cynthia,50,34,84;李御衡,Allen,46,28,74;李絜瑜,Julie,50,38,88;林宥任,Liam,38,24,62;陳欣渝,Cinny,46,28,74;陳彥丞,Daniel,42,22,64;鍾雨澔,Charlies,22,30,52;陳奕霏,Phoebe,,,90",
+ "H1A|K2":"吳宜蒨,Janet,48,38,86;吳怡珈,Baby,44,26,70;吳玠汝,Ruby,40,30,70;吳梓洋,Peter,38,12,50;李俊穎,Gene,20,28,48;周孟葶,Serena,48,20,68;張與任,Sene,50,36,86;陳品霏,Fanny,26,24,50;陳宥勳,Louis,38,24,62;陳禹帆,Leo,50,40,90;楊甯安,Ann,48,30,78;謝心瑀,Rita,46,24,70;謝靜萱,Daisy,40,18,58;陳睿宇,Rex,44,38,82",
+ "H6C|H6":"陳伯銓,Ford,39,37,92;陳芊蓉,Milly,35,32,80;陳芊樺,Vivian,33,35,86;陳芷芸,Anne,37,27,79;謝秉璁,Ben,33,30,78;謝秉叡,Ray,35,35,88",
+ "H7A|H6":"李帛頡,Jerry,32,32,75;張盛善,Samson,31,34,80;陳妤睿,Vivi,37,37,90;陳禹霏,Fanny,32,26,64;陳庭蓁,Joy,36,34,84;陳劉恩,Nick,35,34,81;游秉諺,Kenny,35,30,75;蔣媛芮,Rennie,29,27,64;蘇芳儀,Claire,33,30,75;臧唯,Willy,32,27,79",
+ "H6|H5":"吳宗翰,Luca,40,40,98;吳韋陞,Jacob,32,32,75;吳韋叡,Alex,32,34,77;邱亭毓,Amy,27,21,48;郭珉淇,Kiki,37,38,87;陳子軒,Owen,31,30,69;陳庭禎,Anna,39,40,99;陳瑩利,Leo,33,22,67;謝沂霏,Eve,37,40,97;謝佳宸,Sandy,32,24,65;謝昀修,Hugo,28,26,74;林柔伊,Zoe,32,35,81;陳洺著,Sam,33,34,75",
+ "H5|H4":"王巧妍,Bella,44,34,78;吳秉峯,Jordan,50,36,86;李侑穎,Daniel,32,16,48;李采璇,Hannah,58,40,98;李雨芹,Mina,52,36,88;周孝晨,Herman,60,40,100;易彤芸,Judy,56,40,96;陳芷蓉,Rachel,58,38,96;陳宥均,Gina,48,40,88;陳韋臣,Kevin,32,24,56;臧允,Yunen,58,34,92;蔡玥恩,Lola,60,40,100;鍾昕祐,Richard,56,38,94;方禹傑,Jackson,52,34,86",
+ "H4A|H3":"吳宜璇,Ellie,56,40,96;吳東序,Paul,54,28,82;吳姵蓉,Monica,50,32,82;周媛媛,Doris,56,40,96;邱于桐,Ariel,56,34,90;凃奐宇,Alvin,54,40,94;紀昀希,Alisa,54,30,84;張睿宸,Rex,38,24,62;陳妤瑄,Lucy,52,38,90;陳睿娜,Nana,50,28,78;陳綺云,Alice,52,36,88;楊博硯,Rex,54,34,88;賴子瑋,Brent,54,36,90",
+ "H4|H3":"林承諺,Eddy,50,40,90;陳子翔,Sean,44,20,64;陳衦蓁,Emily,50,28,78;楊幀涵,Ella,60,38,98;謝佳阜,Anson,50,34,84;陳宥瑜,Kelly,60,34,94;黃建勝,Jason,60,40,100",
+ "H3|H2":"吳秉宜,Daniel,36,32,68;吳郡之,Elsie,54,38,92;李建佑,Eric,56,40,96;周潤潤,Reena,52,40,92;張睿恩,Hugo,28,12,40;陳妤瑄,Mindy,56,38,94;陳冠竹,Grace,32,20,52;陳彥文,Ian,58,38,96;陳昱辰,Leo,28,22,50;陳頁言,Tina,52,38,90;蔡丞睿,Ray,50,34,84;蔡昕妤,Selina,48,34,82;程郁湋,Vivi,48,34,82;張承緯,Caden,,,44",
+ "H2B|H2":"石明玄,Sam,34,18,52;李佳蓉,Amy,46,36,82;林立晨,Tim,58,38,96;林芯筠,Hydi,44,32,76;林柏安,Anson,26,16,42;陳昊群,Luke,52,40,92;陳瑢宇,Eddy,48,38,86;趙翌程,Eason,44,34,78;劉羽棠,Stella,52,40,92;謝聿盈,Alice,54,38,92",
+ "H2A|H2":"吳玠萌,Mona,50,40,90;李羽童,Sophia,40,34,74;李宛蓁,Jane,46,30,76;易昱瑋,Watt,54,40,94;張恩齊,Angel,58,36,94;陳禹蓁,Sophie,50,36,86;賴育嫺,Alice,60,40,100"
+};
+const ABS={
+ "H4A":"曾宏耀,Brian,出國玩"
+};
+// 補考：班級|英文名 → 補考日期
+const MAKEUP={"H7A|Willy":"11/9","H1A|Rex":"11/11","H4|Kelly":"11/11","H4|Jason":"11/11","H5|Jackson":"11/11","H6|Zoe":"11/11","H6|Sam":"11/11","H3|Vivi":"11/11","H1B|Phoebe":"11/11","H3|Caden":"11/11"};
+// 考前練習成績：來自「2026 Proficiency Practice Exam Record」試算表（每班一個分頁；分頁 H6A = 本頁 H7A）
+// cols: d=日期 k=排序用(月*100+日) y=考古題年份/單元；noAvg=不列入平均（純聽力卷）
+const PRACTICE={"H1A":{"tab":"H1A","cols":[{"d":"10/1","k":1001,"y":"2024"},{"d":"10/5","k":1005,"y":"2023"},{"d":"10/12","k":1012,"y":"2022"},{"d":"10/9","k":1009,"y":"2020"},{"d":"10/9","k":1009,"y":"2019"}],"rows":{"Janet":[66,64,74,"未考",93],"Baby":[74,63,74,66,75],"Peter":[76,50,69,45,79],"Gene":[76,43,65,59,70],"Serena":[74,74,92,"未考",89],"Sene":[80,83,92,88,90],"Fanny":[74,55,60,58,63],"Louis":[78,77,59,68,74],"Leo":[80,96,97,61,90],"Rex":[70,74,70,78,84],"Rita":[88,70,83,61,89],"Daisy":[72,65,69,62,64],"Ann":[74,50,80,56,74],"Ruby":[66,63,70,70,69]}},"H1B":{"tab":"H1B","cols":[{"d":"10/30","k":1030,"y":"2024"},{"d":"11/6","k":1106,"y":"2023"},{"d":"11/6","k":1106,"y":"2022"}],"rows":{"Lily":[89,80,77],"Celine":[99,94,98],"Cynthia":[90,89,85],"Allen":[74,82,87],"Julie":[89,90,86],"Cinny":[83,81,93],"Phoebe":[85,75,66],"Daniel":[70,70,84],"Charlies":[60,60,68],"Liam":[78,66,65]}},"H2A":{"tab":"H2A","cols":[{"d":"10/14","k":1014,"y":"2024"},{"d":"10/16","k":1016,"y":"2023"},{"d":"10/30","k":1030,"y":"2022"},{"d":"11/11","k":1111,"y":"2019"},{"d":"未填日期","k":1112,"y":"2018"}],"rows":{"Watt":[76,95,94,96,90],"Jane":[60,70,80,80,74],"Mona":[76,84,90,88,96],"Angel":[78,72,92,90,96],"Sophia":[64,78,75,66,76],"Alice":[82,92,92,80,94],"Sophie":[68,80,"請假",77,94]}},"H2B":{"tab":"H2B","cols":[{"d":"10/6","k":1006,"y":"U1-U2 SP"},{"d":"10/13","k":1013,"y":"U3 SP"},{"d":"10/13","k":1013,"y":"U4 SP"},{"d":"10/27","k":1027,"y":"U5 SP"},{"d":"10/27","k":1027,"y":"U6 SP"},{"d":"10/22、27","k":1027,"y":"2024"},{"d":"11/3","k":1103,"y":"2023"},{"d":"11/3","k":1103,"y":"2022"},{"d":"11/10","k":1110,"y":"2020"},{"d":"11/10","k":1110,"y":"2019"},{"d":"11/10","k":1110,"y":"2018"}],"rows":{"Sam":[38,70,75,75,72,26,44,34,44,38,56],"Amy":[80,85,90,91,97,78,"未考","未考",80,82,78],"Tim":[80,100,90,97,99,94,88,94,94,100,94],"Hydi":[67,90,85,100,99,66,84,88,72,56,84],"Anson":[88,90,80,79,60,54,40,50,74,72,90],"Luke":[42,85,90,100,97,86,80,90,80,86,80],"Eddy":[88,"未考","未考",100,82,72,86,92,84,80,82],"Eason":[42,95,90,96,77,74,88,82,72,78,82],"Stella":[83,85,90,98,95,80,90,86,68,76,88],"Alice":[71,80,90,94,93,84,86,82,80,84,78]}},"H3":{"tab":"H3","cols":[{"d":"9/9","k":909,"y":"2024"},{"d":"9/16","k":916,"y":"2023"},{"d":"9/18","k":918,"y":"2022"},{"d":"9/30","k":930,"y":"2020"},{"d":"10/7","k":1007,"y":"2019"},{"d":"10/21","k":1021,"y":"2018"}],"rows":{"Daniel":["未考","未考","未考",58,58,58],"Elsie":[66,48,70,88,94,86],"Eric":[86,78,80,90,92,88],"Reena":[82,86,84,82,94,92],"Caden":["未考","未考","未考",32,32,48],"Hugo":["未考",56,58,40,"未考",50],"Mindy":[82,88,96,82,64,96],"Grace":[38,44,52,66,86,62],"Ian":[66,80,82,84,96,96],"Leo":["未考","未考","未考",52,46,52],"Tina":[80,90,84,78,96,88],"Vivi":[46,66,72,80,76,72],"Ray":[66,74,60,64,72,84],"Selina":[72,78,76,74,84,82]}},"H4":{"tab":"H4","cols":[{"d":"9/9","k":909,"y":"2024"},{"d":"10/16","k":1016,"y":"2024"},{"d":"9/11","k":911,"y":"2023"},{"d":"10/30","k":1030,"y":"2023"},{"d":"9/16","k":916,"y":"2022"},{"d":"9/18","k":918,"y":"2020"},{"d":"9/30","k":930,"y":"2018"}],"rows":{"Eddy":[72,80,52,76,78,90,88],"Sean":[52,48,48,60,48,56,62],"Kelly":[70,86,80,82,82,90,78],"Emily":[70,80,70,76,84,84,78],"Jason":[70,94,50,88,86,"未考",90],"Ella":[78,90,88,88,80,82,92],"Anson":[70,80,60,74,62,76,74],"Allen":[70,74,60,58,62,66,74]}},"H5":{"tab":"H5","cols":[{"d":"9/10","k":910,"y":"2024"},{"d":"10/27","k":1027,"y":"2024"},{"d":"未填日期","k":912,"y":"2023"},{"d":"9/17","k":917,"y":"2022"},{"d":"9/24","k":924,"y":"2020"},{"d":"10/1","k":1001,"y":"2019"},{"d":"10/8","k":1008,"y":"2018"},{"d":"10/15","k":1015,"y":"2014- Listening","noAvg":1}],"rows":{"Jackson":[70,82,84,86,82,92,74,80],"Bella":[76,78,78,92,92,88,84,100],"Jordan":[74,86,78,74,68,74,90,100],"Hannah":[90,94,80,96,86,92,92,90],"Mina":[82,78,84,90,82,84,84,100],"Herman":[90,96,80,98,94,94,86,100],"Judy":[90,90,94,92,96,94,86,100],"Rachel":[82,94,86,90,92,96,90,100],"Gina":[84,94,94,92,92,86,90,80],"Yunen":[88,94,90,98,94,100,96,"請假"],"Lola":[94,96,100,98,94,100,94,100],"Richard":[72,"請假",84,92,84,78,84,90],"Kevin":["未考",56,"未考","未考",52,42,56,90],"Daniel":["未考",70,"未考","未考",36,46,34,30]}},"H4A":{"tab":"H4A","cols":[{"d":"9/8","k":908,"y":"2024"},{"d":"10/6","k":1006,"y":"2024"},{"d":"9/10","k":910,"y":"2023"},{"d":"10/15","k":1015,"y":"2023"},{"d":"9/15","k":915,"y":"2022"},{"d":"10/22","k":1022,"y":"2022"},{"d":"9/22","k":922,"y":"2020"},{"d":"9/24","k":924,"y":"2019"},{"d":"10/1","k":1001,"y":"2018"}],"rows":{"Ellie":[78,76,72,80,84,88,82,88,84],"Paul":[62,"請假",62,78,58,76,68,78,74],"Monica":[48,72,58,62,64,76,76,64,82],"Doris":[78,94,84,96,92,100,98,94,94],"Ariel":[86,84,82,90,86,84,98,94,94],"Alisa":[82,92,72,94,90,100,98,94,92],"Big Rex":[64,60,56,52,70,"未完成",48,"早退",76],"Lucy":[80,84,72,86,84,92,88,80,84],"Nana":[60,72,68,80,80,88,74,80,84],"Alice":[76,92,78,88,90,98,76,80,92],"Brian":["未考",74,"未考",60,"未考",58,70,60,82],"Small Rex":["未考",80,"未考",70,"未考",48,74,64,88],"Brent":[70,80,70,84,80,92,82,92,86],"Alvin":[72,90,66,96,84,92,82,92,92]}},"H6":{"tab":"H6","cols":[{"d":"9/15","k":915,"y":"2024"},{"d":"10/20","k":1020,"y":"2024"},{"d":"9/17","k":917,"y":"2023"},{"d":"10/27","k":1027,"y":"2023"},{"d":"未填日期","k":922,"y":"2022"},{"d":"未填日期","k":929,"y":"2020"},{"d":"10/6","k":1006,"y":"2019"},{"d":"10/13","k":1013,"y":"2018"}],"rows":{"Zoe":[71,"請假",74,80,"未考",66,70,72],"Amy":[48,57,42,53,"未考",40,50,40],"Kiki":[73,84,83,85,"未考",77,82,84],"Owen":[50,56,52,75,"未考",43,61,77],"Leo":[76,78,61,76,"未考",52,49,75],"Sandy":[45,61,58,67,"未考",65,57,78],"Hugo":[55,67,52,70,50,57,64,78],"Luca":[85,90,85,95,77,90,95,94],"Alex":[62,77,53,82,"未考",61,64,81],"Jacob":[74,84,57,80,"未考",76,68,78],"Sam":[79,86,74,84,"未考",77,75,87],"Anna":[86,87,88,92,"未考",89,94,93],"Eve":[92,95,90,95,"未考",91,95,97]}},"H7A":{"tab":"H6A","cols":[{"d":"9/14","k":914,"y":"2023-2"},{"d":"10/21","k":1021,"y":"2023-2"},{"d":"9/16","k":916,"y":"2022"},{"d":"9/30","k":930,"y":"2020"},{"d":"10/7","k":1007,"y":"2019"},{"d":"10/14","k":1014,"y":"2018"},{"d":"10/14","k":1014,"y":"U1-SP"},{"d":"10/14","k":1014,"y":"U2-SP"}],"rows":{"Jerry":[43,71,32,61,77,65,80,81],"Samson":["未考",72,73,70,76,69,87,86],"Vivi":[70,89,80,85,77,83,86,99],"Fanny":["未考",83,53,73,72,68,73,91],"Joy":[66,81,82,83,92,78,90,89],"Nick":[65,73,63,"請假",69,64,84,88],"Kenny":[47,68,62,70,67,66,85,88],"Willy":[60,66,54,60,61,67,86,83],"Rennie":[59,88,59,60,80,55,82,90],"Claire":[42,75,49,66,74,57,88,88]}},"H6C":{"tab":"H6C","cols":[{"d":"11/2","k":1102,"y":"2023"},{"d":"11/9","k":1109,"y":"2022"},{"d":"11/9","k":1109,"y":"2020"},{"d":"11/2","k":1102,"y":"Sentence Pattern"},{"d":"11/9","k":1109,"y":"Sentence Pattern"}],"rows":{"Milly":[84,91,78,89,93],"Ben":[91,72,71,81,86],"Ray":[80,81,84,89,88],"Anne":[75,79,80,89,88],"Ford":[81,91,92,92,94],"Vivian":[86,90,86,85,91],"Jack":[58,55,59,80,70]}}};
+// 試算表姓名 → 本頁學生（同班同名時用中文名對應）
+const ALIAS={};
+const MOCK_K=1107;
+
+const $=id=>document.getElementById(id);
+const CATS=[
+ {k:"fail",lbl:"未通過",sub:"60 以下",dot:"var(--fail)"},
+ {k:"warn",lbl:"需加強",sub:"60–69",dot:"var(--warn)"},
+ {k:"b70",lbl:"70–79",sub:"",dot:"var(--b70)"},
+ {k:"b80",lbl:"80–89",sub:"",dot:"var(--b80)"},
+ {k:"b90",lbl:"90–100",sub:"",dot:"var(--b90)"},
+ {k:"abs",lbl:"待補考",sub:"請假未考",dot:"var(--abs)"},
+];
+const RANK={abs:-1,fail:0,warn:1,b70:2,b80:3,b90:4};
+const catOf=t=>t<60?"fail":t<70?"warn":t<80?"b70":t<90?"b80":"b90";
+const catLbl=k=>(CATS.find(c=>c.k===k)||{lbl:""}).lbl;
+
+/* ---------- 資料：原始資料 + 網頁輸入（db）合併 ---------- */
+let classes=[],S=[],PS={},PM={},YEARS=[],ALLST=[];
+let DBM=[],DBP=[];               // 網頁輸入：模擬考／補考、練習成績
+const ord=c=>classes.findIndex(x=>x.cls===c);
+const tested=a=>a.filter(s=>s.t!=null);
+const yg=y=>/^\d{4}/.test(y)?y.slice(0,4):"單元";
+const ylbl=y=>/listening/i.test(y)?"2014 聽力卷":/^\d{4}$/.test(y)?y+" 考古題":/^\d{4}-/.test(y)?y+" 考古題":y;
+function avg(a){return a.reduce((x,y)=>x+y,0)/a.length}
+function r1(x){return Math.round(x*10)/10}
+function build(){
+  classes=[];S=[];PS={};PM={};
+  for(const key in RAW){const [cls,lv]=key.split("|");classes.push({cls,lv});
+    RAW[key].split(";").forEach(x=>{const [cn,en,l,r,t]=x.split(",");S.push({cls,lv,cn,en,l:l===""?null:+l,r:r===""?null:+r,t:+t,cat:catOf(+t)})})}
+  for(const cls in ABS){const lv=classes.find(c=>c.cls===cls).lv;
+    ABS[cls].split(";").forEach(x=>{const [cn,en,why]=x.split(",");S.push({cls,lv,cn,en,l:null,r:null,t:null,cat:"abs",why})})}
+  S.forEach(s=>{const d=MAKEUP[s.cls+"|"+s.en];if(d)s.mk=d});
+  // 網頁輸入的模擬考／補考成績
+  DBM.forEach(m=>{
+    const c=classes.find(x=>x.cls===m.cls);if(!c||typeof m.t!=="number")return;
+    let st=S.find(s=>s.cls===m.cls&&s.cn===(m.cn||"")&&s.en===m.en);
+    if(!st){st={cls:m.cls,lv:c.lv,cn:m.cn||"",en:m.en};S.push(st)}
+    Object.assign(st,{l:m.l??null,r:m.r??null,t:m.t,cat:catOf(m.t),why:undefined,dbid:m.id});
+    if(m.makeup)st.mk=m.date;else delete st.mk;
+  });
+  // 練習成績：試算表 + 網頁輸入
+  for(const cls in PRACTICE){const P=PRACTICE[cls];PM[cls]={tab:P.tab,cols:P.cols.map(c=>({...c})),rows:Object.fromEntries(Object.entries(P.rows).map(([k,v])=>[k,v.slice()]))}}
+  DBP.slice().sort((a,b)=>(a.k-b.k)||((a.created||0)-(b.created||0))).forEach(e=>{
+    if(!classes.find(c=>c.cls===e.cls)||!e.scores)return;
+    const P=PM[e.cls]||(PM[e.cls]={tab:"網頁輸入",cols:[],rows:{}});
+    const i=P.cols.length;P.cols.push({d:e.date,k:e.k,y:e.paper,db:e.id});
+    for(const n in e.scores){if(!P.rows[n])P.rows[n]=Array(i).fill("未考");P.rows[n][i]=e.scores[n]}
+    for(const n in P.rows)while(P.rows[n].length<=i)P.rows[n].push("未考");
+  });
+  for(const cls in PM){const P=PM[cls],lv=classes.find(c=>c.cls===cls).lv;
+    P.order=P.cols.map((c,i)=>({...c,i,g:yg(c.y)})).sort((a,b)=>a.k-b.k||a.i-b.i);
+    PS[cls]=[];
+    for(const name in P.rows){
+      const al=ALIAS[cls+"|"+name],mm=name.match(/^(.*)（(.*)）$/);
+      let st=al?S.find(s=>s.cls===cls&&s.cn===al):mm?S.find(s=>s.cls===cls&&s.cn===mm[2]):S.find(s=>s.cls===cls&&s.en===name&&S.filter(x=>x.cls===cls&&x.en===name).length===1);
+      if(!st){st={cls,lv,cn:"",en:name,t:null,cat:null,noMock:true}}
+      st.key=name;
+      const v=P.rows[name];
+      st.pr=P.order.map(c=>({d:c.d,y:c.y,k:c.k,g:c.g,noAvg:!!c.noAvg,i:c.i,v:typeof v[c.i]==="number"?v[c.i]:null,why:typeof v[c.i]==="number"?"":(v[c.i]||"未考")}));
+      const vals=st.pr.filter(x=>x.v!=null&&!x.noAvg&&x.k<MOCK_K).map(x=>x.v);
+      if(vals.length){st.pa=r1(avg(vals)); if(st.t!=null) st.d=r1(st.t-st.pa);}
+      PS[cls].push(st);
+    }}
+  YEARS=[...new Set(Object.values(PM).flatMap(P=>P.order.map(c=>c.g)))].sort((a,b)=>a==="單元"?1:b==="單元"?-1:b-a);
+  ALLST=[...S,...Object.values(PS).flat().filter(s=>s.noMock)];
+}
+build();
+
+/* ---------- 狀態 ---------- */
+const state={view:"mock",cls:"all",yr:"all",cat:"all",q:"",sk:"t",dir:-1};
+try{Object.assign(state,JSON.parse(localStorage.getItem("amcView2")||"{}"))}catch(e){}
+function save(){try{localStorage.setItem("amcView2",JSON.stringify({cls:state.cls,yr:state.yr}))}catch(e){}}
+function viewFromHash(){const h=location.hash.slice(1);if(["mock","practice","progress","entry"].includes(h))state.view=h}
+
+/* ---------- 共用 ---------- */
+function bandCls(v){return v==null?"s-na":v<60?"s-fail":v<70?"s-warn":v>=90?"s-b90":""}
+function dTxt(d){if(d==null)return '<span class="flat">—</span>';if(d>=3)return `<span class="up">▲ ${d}</span>`;if(d<=-3)return `<span class="down">▼ ${Math.abs(d)}</span>`;return `<span class="flat">● ${d>0?"+":""}${d}</span>`}
+function nameCell(s){return s.cn?`<span class="cn">${s.cn}</span><span class="en">${s.en}</span>`:`<span class="cn">${s.en}</span><span class="tiny muted" style="margin-left:6px">無模擬考成績</span>`}
+function withMock(pts,m){const i=pts.findIndex(p=>p.k>MOCK_K);if(i<0)pts.push(m);else pts.splice(i,0,m);return pts}
+function sid(s){return s.cls+"|"+(s.cn||"")+"|"+s.en}
+
+function chart(pts,av,aria){
+  const W=620,H=270,L=38,R=40,T=26,B=48,lo=30,hi=100;
+  const x=i=>L+(pts.length===1?(W-L-R)/2:i*(W-L-R)/(pts.length-1)),y=v=>T+(hi-Math.max(lo,v))*(H-T-B)/(hi-lo);
+  let g="";
+  for(let v=40;v<=100;v+=20)g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line-soft)"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`;
+  g+=`<line x1="${L}" x2="${W-R}" y1="${y(60)}" y2="${y(60)}" stroke="var(--terra)" stroke-width="1.2" stroke-dasharray="4 4"/><text x="${W-R+6}" y="${y(60)+4}" font-size="11" fill="var(--terra)">60</text>`;
+  if(av!=null)g+=`<line x1="${L}" x2="${W-R}" y1="${y(av)}" y2="${y(av)}" stroke="var(--muted)" stroke-dasharray="1 4"/><text x="${W-R+6}" y="${y(av)+4}" font-size="10" fill="var(--muted)">均${Math.round(av)}</text>`;
+  const seg=[];let cur=[];pts.forEach((p,i)=>{if(p.v==null){if(cur.length)seg.push(cur);cur=[]}else cur.push([x(i),y(p.v)])});if(cur.length)seg.push(cur);
+  const area=seg.filter(s=>s.length>1).map(sg=>`<path d="M${sg[0][0]},${y(lo)} L${sg.map(a=>a.join(",")).join(" L")} L${sg[sg.length-1][0]},${y(lo)} Z" fill="var(--sage-soft)" opacity=".6"/>`).join("");
+  g+=area;
+  seg.forEach(sg=>{if(sg.length>1)g+=`<polyline points="${sg.map(a=>a.join(",")).join(" ")}" fill="none" stroke="var(--sage-deep)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`});
+  const crowd=pts.length>8,fs=pts.length>10?9.5:crowd?10.5:12;
+  pts.forEach((p,i)=>{
+    g+=`<text x="${x(i)}" y="${H-B+18}" text-anchor="middle" font-size="${fs}" fill="${p.official?"var(--sea)":"var(--ink)"}" font-weight="${p.official?700:400}">${p.lbl}</text><text x="${x(i)}" y="${H-B+32}" text-anchor="middle" font-size="${fs-2}" fill="var(--muted)">${crowd?p.sub.replace(" 考古題","").replace(" 聽力卷","聽"):p.sub}</text>`;
+    if(p.v==null){g+=`<text x="${x(i)}" y="${y(36)}" text-anchor="middle" font-size="10" fill="var(--muted)">${p.why||"未考"}</text>`;return}
+    if(p.official) g+=`<circle cx="${x(i)}" cy="${y(p.v)}" r="7.5" fill="var(--sea)"/><circle cx="${x(i)}" cy="${y(p.v)}" r="3" fill="var(--card)"/>`;
+    else g+=`<circle cx="${x(i)}" cy="${y(p.v)}" r="4.5" fill="${p.v<60?"var(--terra)":"var(--card)"}" stroke="${p.v<60?"var(--terra)":"var(--sage-deep)"}" stroke-width="2"/>`;
+    g+=`<text x="${x(i)}" y="${y(p.v)-11}" text-anchor="middle" font-size="11.5" font-weight="700" font-family="DM Sans,sans-serif" fill="${p.official?"var(--sea)":p.v<60?"var(--terra)":"var(--ink)"}">${p.v}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${aria}">${g}</svg>`;
+}
+function spark(s){
+  if(!s.pr)return "";
+  const pts=withMock(s.pr.filter(p=>!p.noAvg).map(p=>({v:p.v,k:p.k})),{v:s.t,k:MOCK_K,o:1}).filter(p=>p.v!=null);
+  if(pts.length<2)return "";
+  const W=120,H=28,lo=30,x=i=>3+i*(W-6)/(pts.length-1),y=v=>3+(100-Math.max(lo,v))*(H-6)/(100-lo);
+  const m=pts.findIndex(p=>p.o);
+  return `<svg class="spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><line x1="0" x2="${W}" y1="${y(60)}" y2="${y(60)}" stroke="var(--terra)" stroke-width=".8" stroke-dasharray="2 3"/><polyline points="${pts.map((p,i)=>x(i)+","+y(p.v)).join(" ")}" fill="none" stroke="var(--sage-deep)" stroke-width="1.5" stroke-linejoin="round"/>${m>=0?`<circle cx="${x(m)}" cy="${y(pts[m].v)}" r="3" fill="var(--sea)"/>`:""}</svg>`;
+}
+function verdict(d,t,pa,who){
+  if(t==null)return `<div class="verdict v-flat">尚未有 11/7 模擬考成績</div>`;
+  if(pa==null)return `<div class="verdict v-flat">沒有 11/7 之前的練習紀錄 <small>${who}11/7 模擬考 ${t} 分</small></div>`;
+  if(d>=3)return `<div class="verdict v-up">▲ 進步 ${d} 分 <small>${who}11/7 模擬考 ${t} 分，考前練習平均 ${pa}</small></div>`;
+  if(d<=-3)return `<div class="verdict v-down">▼ 退步 ${Math.abs(d)} 分 <small>${who}11/7 模擬考 ${t} 分，考前練習平均 ${pa}</small></div>`;
+  return `<div class="verdict v-flat">● 表現持平 <small>${who}11/7 模擬考 ${t} 分，考前練習平均 ${pa}</small></div>`;
+}
+
+/* ---------- 篩選列 ---------- */
+function renderFilters(){
+  $("clsRow").innerHTML=`<span class="flabel">班級</span><button class="chip${state.cls==="all"?" on":""}" data-cls="all">全部</button>`+
+    classes.map(c=>`<button class="chip${state.cls===c.cls?" on":""}" data-cls="${c.cls}">${c.cls}<small>${c.lv}</small></button>`).join("")+
+    (state.view==="mock"?`<input id="q" type="search" placeholder="搜尋姓名" aria-label="搜尋姓名" value="${state.q.replace(/"/g,"")}">`:"");
+  const yr=$("yrRow");
+  if(state.view==="practice"){yr.hidden=false;
+    yr.innerHTML=`<span class="flabel">考卷</span><button class="chip${state.yr==="all"?" on":""}" data-yr="all">全部</button>`+
+      YEARS.map(g=>`<button class="chip${state.yr===g?" on":""}" data-yr="${g}">${g==="單元"?"單元／句型練習":g==="2014"?"2014 聽力卷":g+" 考古題"}</button>`).join("");
+  } else yr.hidden=true;
+  const q=$("q");if(q)q.addEventListener("input",e=>{state.q=e.target.value;renderMockList()});
+}
+
+/* ---------- 模擬考 ---------- */
+function mockPool(){return S.filter(s=>state.cls==="all"||s.cls===state.cls)}
+function renderMock(){
+  const p=mockPool(),n=tested(p).length;
+  $("dist").innerHTML=CATS.filter(c=>c.k!=="abs").map(c=>{const k=p.filter(s=>s.cat===c.k).length;return k?`<i style="width:${k/n*100}%;background:${c.dot}" title="${c.lbl} ${k} 人"></i>`:""}).join("");
+  $("legend").innerHTML=CATS.map(c=>{const k=p.filter(s=>s.cat===c.k).length;
+    return `<button class="lg${state.cat===c.k?" on":""}" data-cat="${c.k}" style="--dot:${c.dot}"><span class="t">${c.lbl}${c.sub?" · "+c.sub:""}</span><b class="c-${c.k}">${k}</b><small>${c.k==="abs"?"人":n?Math.round(k/n*100)+"%":"—"}</small></button>`}).join("");
+  const A=S.filter(s=>s.cat==="abs");
+  $("todo").innerHTML=A.length?`<div class="notice"><b>待補考 ${A.length} 人</b>${A.map(s=>`<span><span class="clsTag">${s.cls}</span> ${s.cn} ${s.en}<span class="muted tiny">（${s.why}）</span></span>`).join("")}</div>`
+    :`<div class="notice done"><b>全部補考完成</b></div>`;
+  $("byClassCard").hidden=state.cls!=="all";
+  renderMockList();renderByClass();
+}
+function renderMockList(){
+  const q=state.q.trim().toLowerCase();
+  let rows=mockPool().filter(s=>(state.cat==="all"||s.cat===state.cat)&&(!q||(s.cn+s.en).toLowerCase().includes(q)));
+  const val=s=>state.sk==="cls"?ord(s.cls):state.sk==="cat"?RANK[s.cat]:state.sk==="lv"?s.lv:state.sk==="name"?s.en.toLowerCase():(s[state.sk]??-999);
+  rows.sort((a,b)=>{const x=val(a),y=val(b);return (x<y?-1:x>y?1:0)*state.dir||(b.t??-1)-(a.t??-1)});
+  document.querySelectorAll("#v-mock th[data-k]").forEach(th=>th.removeAttribute("aria-sort"));
+  const th=document.querySelector(`#v-mock th[data-k="${state.sk}"]`);if(th)th.setAttribute("aria-sort",state.dir<0?"descending":"ascending");
+  $("listTitle").innerHTML=`${state.cls==="all"?"":state.cls+" 班 · "}${state.cat==="all"?"全部學生":catLbl(state.cat)} <span>${rows.length} 人${state.cat!=="all"?' · <button class="chip" data-cat="all" style="padding:0 10px;font-size:.75rem">清除分類</button>':""}</span>`;
+  $("tbody").innerHTML=rows.length?rows.map(s=>`<tr class="${s.pr?"click":""}" data-sid="${sid(s)}"><td class="clsTag">${s.cls}</td><td>${s.lv}</td><td>${nameCell(s)}${s.mk?`<span class="mk">補考 ${s.mk}</span>`:""}</td>`+
+    (s.cat==="abs"?`<td class="r muted">—</td><td class="r muted">—</td><td class="r muted">—</td><td><span class="band c-abs">待補考</span> <span class="tiny muted">${s.why}</span></td>`
+    :`<td class="r num">${s.l??'<span class="muted">—</span>'}</td><td class="r num">${s.r??'<span class="muted">—</span>'}</td><td class="r num" style="font-weight:700">${s.t}</td><td><span class="band c-${s.cat}">${catLbl(s.cat)}</span></td>`)+`</tr>`).join("")
+    :`<tr><td colspan="7" class="empty">沒有符合的學生</td></tr>`;
+}
+function renderByClass(){
+  const cs=CATS;
+  let h=`<thead><tr><th>班級</th><th>級數</th><th class="r">應考</th>${cs.map(c=>`<th class="r">${c.lbl}</th>`).join("")}<th class="r">平均</th><th class="r">通過率</th></tr></thead><tbody>`;
+  const row=(lbl,lv,all)=>{const p=tested(all),n=p.length;return `<td class="r num">${n}</td>`+cs.map(k=>{const v=all.filter(s=>s.cat===k.k).length;return `<td class="r num ${v?"c-"+k.k:"muted"}" style="${v?"font-weight:700":""}">${v||"·"}</td>`}).join("")+`<td class="r num">${r1(avg(p.map(s=>s.t))).toFixed(1)}</td><td class="r num">${Math.round(p.filter(s=>s.t>=60).length/n*100)}%</td>`};
+  classes.forEach(c=>{h+=`<tr><td><button class="chip" data-cls="${c.cls}">${c.cls}</button></td><td>${c.lv}</td>${row(c.cls,c.lv,S.filter(s=>s.cls===c.cls))}</tr>`});
+  h+=`<tr class="foot"><td>合計</td><td></td>${row("","",S)}</tr></tbody>`;
+  $("byClass").innerHTML=h;
+}
+
+/* ---------- 練習成績 ---------- */
+function colsOf(cls){const P=PM[cls];return P?P.order.filter(c=>state.yr==="all"||c.g===state.yr):[]}
+function renderPractice(){
+  const list=state.cls==="all"?classes.map(c=>c.cls):[state.cls];
+  // 單一考卷：各班比較
+  if(state.yr!=="all"){
+    let rows="";
+    list.forEach(cls=>{colsOf(cls).forEach(c=>{
+      const vs=PS[cls].map(s=>s.pr.find(p=>p.i===c.i).v).filter(v=>v!=null);
+      if(!vs.length)return;
+      rows+=`<tr><td><button class="chip" data-cls="${cls}">${cls}</button></td><td>${classes.find(x=>x.cls===cls).lv}</td><td>${c.d}</td><td>${ylbl(c.y)}</td><td class="r num">${vs.length}</td><td class="r num" style="font-weight:700">${r1(avg(vs)).toFixed(1)}</td><td class="r num">${Math.max(...vs)}</td><td class="r num">${Math.min(...vs)}</td><td class="r num ${vs.some(v=>v<60)?"c-fail":"muted"}">${vs.filter(v=>v<60).length||"·"}</td></tr>`})});
+    $("yrSummary").innerHTML=`<div class="card"><h2>${state.yr==="單元"?"單元／句型練習":state.yr==="2014"?"2014 聽力卷":state.yr+" 考古題"} · 各班表現 <span>點班級看該班明細</span></h2><div class="scroll"><table><thead><tr><th>班級</th><th>級數</th><th>日期</th><th>考卷</th><th class="r">人數</th><th class="r">平均</th><th class="r">最高</th><th class="r">最低</th><th class="r">不及格</th></tr></thead><tbody>${rows||'<tr><td colspan="9" class="empty">這份考卷沒有紀錄</td></tr>'}</tbody></table></div></div>`;
+  } else $("yrSummary").innerHTML="";
+  $("grids").innerHTML=list.map(cls=>{
+    const lv=classes.find(c=>c.cls===cls).lv;
+    if(!PM[cls]) return state.cls==="all"?"":`<div class="card"><h2>${cls} 班 <span>${lv} 級數</span></h2><div class="empty">這班在試算表裡沒有練習紀錄。</div></div>`;
+    const cols=colsOf(cls); if(!cols.length) return state.cls==="all"?"":`<div class="card"><h2>${cls} 班 <span>${lv} 級數</span></h2><div class="empty">這班沒有做過這份考卷。</div></div>`;
+    const showMock=state.yr==="all";
+    const head=`<tr><th>學生</th>${cols.map(c=>`<th class="colh"><b>${c.d}</b>${ylbl(c.y).replace(" 考古題","")}${c.db?'<i class="dbdot" title="網頁輸入"></i>':""}</th>`).join("")}${showMock?`<th class="colh r">練習<br>平均</th><th class="colh" style="color:var(--sea)"><b style="color:var(--sea)">11/7</b>模擬考</th>`:""}</tr>`;
+    const body=PS[cls].map(s=>`<tr class="click" data-sid="${sid(s)}"><td>${nameCell(s)}</td>${cols.map(c=>{const p=s.pr.find(x=>x.i===c.i);return `<td class="sc ${bandCls(p.v)}">${p.v??p.why}</td>`}).join("")}${showMock?`<td class="r num muted">${s.pa??"—"}</td><td class="sc s-mock ${bandCls(s.t)}">${s.t??(s.cat==="abs"?"待補考":"—")}</td>`:""}</tr>`).join("");
+    const foot=`<tr class="foot"><td>班平均</td>${cols.map(c=>{const vs=PS[cls].map(s=>s.pr.find(x=>x.i===c.i).v).filter(v=>v!=null);return `<td class="sc">${vs.length?r1(avg(vs)):"—"}</td>`}).join("")}${showMock?(()=>{const t=PS[cls].filter(s=>s.t!=null);const pa=PS[cls].map(s=>s.pa).filter(v=>v!=null);return `<td class="r num">${pa.length?r1(avg(pa)):"—"}</td><td class="sc s-mock">${t.length?r1(avg(t.map(s=>s.t))):"—"}</td>`})():""}</tr>`;
+    return `<div class="card"><h2>${cls} 班 <span>${lv} 級數 · ${PS[cls].length} 人 · ${PM[cls].tab==="網頁輸入"?"網頁輸入":"試算表分頁「"+PM[cls].tab+"」"}</span></h2><div class="scroll"><table><thead>${head}</thead><tbody>${body}${foot}</tbody></table></div></div>`;
+  }).join("")||`<div class="card"><div class="empty">沒有符合的練習紀錄</div></div>`;
+}
+
+/* ---------- 進退步 ---------- */
+function classInfo(cls){
+  const st=PS[cls];if(!st)return null;
+  const P=PM[cls];
+  const ex=P.order.map(c=>{const vs=st.map(s=>s.pr.find(x=>x.i===c.i).v).filter(v=>v!=null);return {lbl:c.d,sub:ylbl(c.y),k:c.k,v:vs.length?r1(avg(vs)):null}});
+  const tt=st.filter(s=>s.t!=null&&s.pa!=null),mock=tt.length?r1(avg(tt.map(s=>s.t))):null,pa=tt.length?r1(avg(tt.map(s=>s.pa))):null;
+  return {st,ex,mock,pa,d:mock==null?null:r1(mock-pa),up:tt.filter(s=>s.d>=3),flat:tt.filter(s=>s.d>-3&&s.d<3),down:tt.filter(s=>s.d<=-3)};
+}
+function renderProgress(){
+  let h=`<thead><tr><th>班級</th><th>級數</th><th class="r">考前練習平均</th><th class="r">11/7 模擬考平均</th><th class="r">進退步</th><th class="r">▲ 進步</th><th class="r">● 持平</th><th class="r">▼ 退步</th></tr></thead><tbody>`;
+  classes.forEach(x=>{const c=classInfo(x.cls);
+    h+=`<tr${state.cls===x.cls?' style="background:#faf6ec"':""}><td><button class="chip${state.cls===x.cls?" on":""}" data-cls="${x.cls}">${x.cls}</button></td><td>${x.lv}</td>`+(c?
+    `<td class="r num">${c.pa}</td><td class="r num">${c.mock??"—"}</td><td class="r num">${dTxt(c.d)}</td><td class="r num up">${c.up.length}</td><td class="r num flat">${c.flat.length}</td><td class="r num down">${c.down.length}</td>`
+    :`<td colspan="6" class="muted">沒有練習紀錄</td>`)+`</tr>`});
+  $("progTable").innerHTML=h+"</tbody>";
+  // 班級曲線
+  const box=$("classTrend");
+  if(state.cls==="all"){box.innerHTML="";}
+  else{const c=classInfo(state.cls),lv=classes.find(x=>x.cls===state.cls).lv;
+    if(!c)box.innerHTML=`<div class="card"><h2>${state.cls} 班 <span>${lv} 級數</span></h2><div class="empty">這班在試算表裡沒有練習紀錄，只有 11/7 模擬考成績。</div></div>`;
+    else{const nm=a=>a.length?a.slice().sort((x,y)=>y.d-x.d).map(s=>`${s.en} <span class="num">${s.d>0?"+":""}${s.d}</span>`).join("、"):"—";
+      const pts=withMock(c.ex.slice(),{lbl:"11/7",sub:"模擬考",v:c.mock,official:true,k:MOCK_K});
+      const nm2=c.st.filter(s=>s.noMock);
+      box.innerHTML=`<div class="card"><h2>${state.cls} 班平均曲線 <span>${lv} 級數 · 藍點為 11/7 模擬考</span></h2>${verdict(c.d,c.mock,c.pa,"班平均 ")}<div class="chart">${chart(pts,c.pa,state.cls+" 班平均曲線")}</div>
+      <div class="groups"><div><b class="up">▲ 進步 ${c.up.length} 人</b><span>${nm(c.up)}</span></div><div><b class="flat">● 持平 ${c.flat.length} 人</b><span>${nm(c.flat)}</span></div><div><b class="down">▼ 退步 ${c.down.length} 人</b><span>${nm(c.down)}</span></div>${nm2.length?`<div><b class="flat">只有練習成績</b><span>${nm2.map(s=>s.en).join("、")}</span></div>`:""}</div></div>`;}
+  }
+  // 學生列表
+  const pool=(state.cls==="all"?Object.values(PS).flat():(PS[state.cls]||[])).slice().sort((a,b)=>(b.d??-999)-(a.d??-999));
+  $("pgTitle").innerHTML=`${state.cls==="all"?"全部學生":state.cls+" 班學生"} <span>依進退步排序 · 點學生看個人曲線</span>`;
+  $("pgStu").innerHTML=`<thead><tr><th>班級</th><th>學生</th><th>走勢</th><th class="r">考前練習平均</th><th class="r">11/7 模擬考</th><th class="r">進退步</th></tr></thead><tbody>`+
+    (pool.length?pool.map(s=>`<tr class="click" data-sid="${sid(s)}"><td class="clsTag">${s.cls}</td><td>${nameCell(s)}</td><td>${spark(s)}</td><td class="r num">${s.pa??"—"}</td><td class="r num ${bandCls(s.t)}" style="background:none">${s.t??(s.cat==="abs"?'<span class="tiny muted">待補考</span>':"—")}</td><td class="r num">${dTxt(s.d)}</td></tr>`).join("")
+    :`<tr><td colspan="6" class="empty">這班沒有練習紀錄</td></tr>`)+`</tbody>`;
+}
+
+/* ---------- 個人 ---------- */
+function openStudent(s){
+  const vals=s.pr?s.pr.filter(p=>p.v!=null&&!p.noAvg).map(p=>p.v):[];
+  let body="";
+  if(s.pr){
+    const pts=withMock(s.pr.map(p=>({lbl:p.d,sub:ylbl(p.y),v:p.v,k:p.k,why:p.why})),{lbl:"11/7",sub:s.mk?"補考":"模擬考",v:s.t,official:true,k:MOCK_K,why:s.cat==="abs"?"待補考":"未考"});
+    const fails=vals.filter(v=>v<60).length;
+    const histRows=withMock(s.pr.map(p=>({d:p.d,lbl:ylbl(p.y),v:p.v,why:p.why,k:p.k})),{d:"11/7",lbl:"英檢模擬考"+(s.mk?"（補考 "+s.mk+"）":""),v:s.t,why:s.cat==="abs"?"待補考":"—",k:MOCK_K,o:1});
+    body=`${verdict(s.d,s.t,s.pa,"")}<div class="chart">${chart(pts,s.pa,s.en+" 成績曲線")}</div>
+    <div class="stats"><div class="stat"><span>練習次數</span><b>${vals.length}</b></div><div class="stat"><span>練習最高</span><b>${vals.length?Math.max(...vals):"—"}</b></div><div class="stat"><span>練習最低</span><b>${vals.length?Math.min(...vals):"—"}</b></div><div class="stat"><span>練習不及格</span><b class="${fails?"c-fail":""}">${fails} 次</b></div></div>
+    <div class="hist"><table><thead><tr><th>日期</th><th>考卷</th><th class="r">分數</th></tr></thead><tbody>${histRows.map(r=>`<tr${r.o?' style="background:#eef3f4"':""}><td class="num">${r.d}</td><td>${r.lbl}</td><td class="r num ${bandCls(r.v)}" style="${r.v!=null&&r.v<60?"":"background:none"}">${r.v??`<span class="tiny muted">${r.why}</span>`}</td></tr>`).join("")}</tbody></table></div>`;
+  }
+  $("dlgBody").innerHTML=`<div class="dlg-h"><div><h3>${s.cn?s.cn+" ":""}${s.en}</h3><p>${s.cls} 班 · ${s.lv} 級數${s.t!=null?` · 11/7 模擬考 <b>${s.t}</b> 分（${catLbl(s.cat)}）`:""}</p></div><button class="x" id="dlgX" aria-label="關閉">×</button></div>${body}`;
+  $("ov").hidden=false;$("dlgX").focus();
+}
+function closeDlg(){$("ov").hidden=true}
+
+/* ---------- 主流程 ---------- */
+function render(){
+  document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("on",a.dataset.v===state.view));
+  ["mock","practice","progress","entry"].forEach(v=>$("v-"+v).hidden=state.view!==v);
+  $("filters").hidden=state.view==="entry";
+  renderSum();
+  if(state.view==="entry"){renderEntryList();save();return}
+  renderFilters();
+  if(state.view==="mock")renderMock();else if(state.view==="practice")renderPractice();else renderProgress();
+  save();
+}
+document.addEventListener("click",e=>{
+  const act=e.target.closest("[data-act]");if(act){entryAct(act);return}
+  if(e.target.id==="ov"||e.target.closest("#dlgX")){closeDlg();return}
+  const lg=e.target.closest("[data-cat]");if(lg){state.cat=state.cat===lg.dataset.cat?"all":lg.dataset.cat;renderMock();return}
+  const c=e.target.closest("[data-cls]");if(c){state.cls=c.dataset.cls;state.cat="all";render();if(!c.closest(".filters"))window.scrollTo({top:0,behavior:"smooth"});return}
+  const y=e.target.closest("[data-yr]");if(y){state.yr=y.dataset.yr;render();return}
+  const th=e.target.closest("th[data-k]");if(th){const k=th.dataset.k;state.dir=state.sk===k?-state.dir:(["t","l","r"].includes(k)?-1:1);state.sk=k;renderMockList();return}
+  const tr=e.target.closest("tr[data-sid]");if(tr){const s=ALLST.find(x=>sid(x)===tr.dataset.sid);if(s&&s.pr)openStudent(s)}
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDlg()});
+window.addEventListener("hashchange",()=>{viewFromHash();render()});
+/* ---------- 輸入成績（存在 db：mock / practice 兩個集合） ---------- */
+let DB=null,CANW=true,editM=null,editP=null;
+const PAPERS=["2025","2024","2023","2022","2021","2020","2019","2018","2017","2016","2015","2014"];
+function today(){const d=new Date();return (d.getMonth()+1)+"/"+d.getDate()}
+function dkey(x){const m=String(x).trim().match(/^(\d{1,2})\s*[\/\-.月]\s*(\d{1,2})/);if(!m)return null;const a=+m[1],b=+m[2];return a>=1&&a<=12&&b>=1&&b<=31?{d:a+"/"+b,k:a*100+b}:null}
+function idSafe(x){return Array.from(String(x)).map(ch=>/[A-Za-z0-9]/.test(ch)?ch:"_"+ch.codePointAt(0).toString(36)).join("").slice(0,150)||"x"}
+function numOrNull(v){v=String(v).trim();if(v==="")return null;return /^\d{1,3}$/.test(v)&&+v<=100?+v:NaN}
+const cl=x=>typeof x==="string"?x.replace(/[<>&"]/g,"").slice(0,60):x;
+function cleanObj(o){const r={};for(const k in o){const v=o[k];r[cl(k)]=v&&typeof v==="object"&&!Array.isArray(v)?cleanObj(v):cl(v)}return r}
+function lvOf(cls){return (classes.find(c=>c.cls===cls)||{}).lv}
+function stuKey(s){return (s.cn||"")+"|"+s.en}
+function stuList(cls){const l=S.filter(s=>s.cls===cls).concat((PS[cls]||[]).filter(s=>s.noMock));return l.sort((a,b)=>(a.cat==="abs"?0:1)-(b.cat==="abs"?0:1))}
+function stuLabel(s){return `${s.cn?s.cn+" ":""}${s.en}${s.cat==="abs"?"（待補考）":s.t!=null?"（目前 "+s.t+" 分）":"（還沒有模擬考成績）"}`}
+function initEntry(){
+  const opts=classes.map(c=>`<option value="${c.cls}">${c.cls}（${c.lv}）</option>`).join("");
+  $("fmCls").innerHTML=opts;$("fpCls").innerHTML=opts;
+  $("fpPaper").innerHTML=PAPERS.map(y=>`<option value="${y}">${y} 考古題</option>`).join("")+`<option value="__c">單元／其他（自己輸入）</option>`;
+  $("fmD").value=today();$("fpD").value=today();
+  const firstAbs=S.find(s=>s.cat==="abs");
+  $("fmCls").value=state.cls!=="all"?state.cls:firstAbs?firstAbs.cls:classes[0].cls;
+  $("fpCls").value=state.cls!=="all"?state.cls:classes[0].cls;
+  fillMock();fillRoster();
+  $("fmCls").onchange=()=>fillMock();
+  $("fpCls").onchange=()=>{if(editP)cancelP();fillRoster()};
+  $("fpPaper").onchange=()=>{$("fpCustomL").hidden=$("fpPaper").value!=="__c";if($("fpPaper").value==="__c")$("fpCustom").focus()};
+  $("fmSave").onclick=saveMock;$("fpSave").onclick=savePrac;
+  $("fpCancel").onclick=()=>{cancelP();fillRoster()};
+  const enterNext=(tbl,btn)=>$(tbl).addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("input:not([type=checkbox])")){e.preventDefault();const all=[...document.querySelectorAll("#"+tbl+" input:not([type=checkbox])")],i=all.indexOf(e.target);(all[i+1]||$(btn)).focus()}});
+  enterNext("fmTbl","fmSave");enterNext("fpTbl","fpSave");
+}
+function cancelP(){editP=null;$("fpCancel").hidden=true;$("fpEditing").hidden=true;$("fpD").value=today()}
+function fillMock(focusKey){const cls=$("fmCls").value,l=stuList(cls);
+  $("fmTbl").innerHTML=`<thead><tr><th>學生</th><th>目前</th><th class="c">總分</th><th class="c">補考</th></tr></thead><tbody>`+(l.length?l.map((s,i)=>
+    `<tr${focusKey===stuKey(s)?' style="background:#faf6ec"':""}><td>${s.cn?s.cn+" ":""}${s.en}</td><td>${s.cat==="abs"?'<span class="band c-abs">待補考</span>':s.t!=null?`<span class="num">${s.t}</span>${s.mk?`<span class="mk">補考 ${s.mk}</span>`:""}`:'<span class="muted tiny">沒有成績</span>'}</td>`+
+    `<td class="c"><input id="fm_${i}" data-key="${stuKey(s)}" data-old="${s.t??""}" data-oldmk="${s.mk?1:0}" value="${s.t??""}" inputmode="numeric" autocomplete="off" aria-label="${s.cn||""} ${s.en} 總分"></td>`+
+    `<td class="c"><input type="checkbox" id="fmk_${i}" ${s.cat==="abs"||s.mk?"checked":""} aria-label="補考"></td></tr>`).join(""):`<tr><td colspan="4" class="empty">這班沒有學生名單</td></tr>`)+"</tbody>";
+  $("fmMsg").textContent="";
+  if(focusKey){const inp=[...document.querySelectorAll("#fmTbl input[data-key]")].find(x=>x.dataset.key===focusKey);if(inp){inp.scrollIntoView({block:"center",behavior:"smooth"});inp.focus()}}}
+function refreshStuLabels(){}
+function errText(e){return e&&e.code==="invalid_argument"?"沒有儲存權限，或資料格式不對。":e&&e.code==="quota_exceeded"?"資料庫已滿，請刪掉一些舊紀錄。":"儲存失敗，請稍後再試一次。"}
+function bad(msgEl,t,focusEl){msgEl.className="msg err";msgEl.textContent=t;if(focusEl)focusEl.focus()}
+async function saveMock(){const msg=$("fmMsg");msg.className="msg";
+  if(!DB||!CANW)return bad(msg,"現在無法儲存：資料庫沒有連上或沒有權限。");
+  const cls=$("fmCls").value,dk=dkey($("fmD").value);
+  if(!dk)return bad(msg,"日期請用「月/日」，例如 11/12。",$("fmD"));
+  const todo=[];let wrong=null;
+  document.querySelectorAll("#fmTbl input[data-key]").forEach(inp=>{const v=inp.value.trim(),mk=$(inp.id.replace("fm_","fmk_")).checked;
+    if(v===""||(v===inp.dataset.old&&String(+mk)===inp.dataset.oldmk))return;
+    const t=numOrNull(v);if(typeof t!=="number"||isNaN(t)){wrong=wrong||inp;return}
+    const [cn,en]=inp.dataset.key.split("|");todo.push({cn,en,t,mk})});
+  if(wrong)return bad(msg,"總分要填 0–100 的數字。",wrong);
+  if(!todo.length)return bad(msg,"沒有新的或修改過的成績。");
+  $("fmSave").disabled=true;let ok=0,fail=0;
+  for(const r of todo){msg.textContent=`儲存中… ${ok+fail+1}/${todo.length}`;
+    const old=DBM.find(m=>m.cls===cls&&(m.cn||"")===r.cn&&m.en===r.en),id=old?old.id:"m-"+idSafe(cls+"-"+r.en+"-"+r.cn);
+    try{await DB.collection("mock").doc(id).set({cls,cn:r.cn,en:r.en,l:null,r:null,t:r.t,date:dk.d,makeup:r.mk,updated:Date.now()});ok++}catch(e){fail++;if(fail===1)msg.dataset.err=errText(e)}}
+  if(fail)bad(msg,`存好 ${ok} 位，${fail} 位沒存成功：${msg.dataset.err}`);else{msg.className="msg";msg.textContent=`已儲存 ✓ ${cls} 共 ${ok} 位學生`}
+  $("fmSave").disabled=!(DB&&CANW);
+  setTimeout(()=>{const keep=msg.textContent,cls2=msg.className;fillMock();msg.textContent=keep;msg.className=cls2},400)}
+function roster(cls){const R=(PS[cls]||[]).map(s=>({key:s.key,label:s.cn?`${s.cn} ${s.en}`:s.key,st:s}));
+  S.filter(s=>s.cls===cls&&!s.pr).forEach(s=>{const dup=S.filter(x=>x.cls===cls&&x.en===s.en).length>1;R.push({key:dup?`${s.en}（${s.cn}）`:s.en,label:`${s.cn} ${s.en}`,st:s})});
+  return R}
+function fillRoster(vals){const cls=$("fpCls").value,R=roster(cls);
+  $("fpTbl").innerHTML=`<thead><tr><th>學生</th><th class="c">分數</th><th>最近一次練習</th></tr></thead><tbody>`+(R.length?R.map((s,i)=>{const last=s.st.pr?s.st.pr.filter(p=>p.v!=null).slice(-1)[0]:null;const v=vals&&vals[s.key]!=null?vals[s.key]:"";
+    return `<tr><td>${s.label}</td><td class="c"><input id="fp_${i}" data-key="${s.key}" autocomplete="off" inputmode="numeric" value="${v}" aria-label="${s.label} 分數"></td><td class="prev">${last?`${last.d} · ${ylbl(last.y).replace(" 考古題","")} · <b>${last.v}</b>`:"—"}</td></tr>`}).join(""):`<tr><td colspan="3" class="empty">這班還沒有學生名單</td></tr>`)+"</tbody>";
+  $("fpMsg").textContent=""}
+async function savePrac(){const msg=$("fpMsg");msg.className="msg";
+  if(!DB||!CANW)return bad(msg,"現在無法儲存：資料庫沒有連上或沒有權限。");
+  const cls=$("fpCls").value,dk=dkey($("fpD").value);
+  if(!dk)return bad(msg,"日期請用「月/日」，例如 11/12。",$("fpD"));
+  let paper=$("fpPaper").value;if(paper==="__c"){paper=$("fpCustom").value.trim().replace(/[<>&"]/g,"");if(!paper)return bad(msg,"請填考卷名稱。",$("fpCustom"))}
+  const scores={};let n=0,wrong=null;
+  document.querySelectorAll("#fpTbl input").forEach(inp=>{const v=inp.value.trim();if(!v)return;const x=numOrNull(v);
+    if(typeof x==="number"&&!isNaN(x)){scores[inp.dataset.key]=x;n++}else if(/^\d+$/.test(v)){wrong=wrong||inp}else scores[inp.dataset.key]=v.replace(/[<>&"]/g,"").slice(0,20)});
+  if(wrong)return bad(msg,"分數要在 0–100 之間。",wrong);
+  if(!n)return bad(msg,"至少要填一位學生的分數。");
+  const old=editP?DBP.find(x=>x.id===editP):null,id=editP||("p-"+idSafe(cls)+"-"+Date.now().toString(36));
+  $("fpSave").disabled=true;msg.textContent="儲存中…";
+  try{await DB.collection("practice").doc(id).set({cls,date:dk.d,k:dk.k,paper,scores,created:old&&old.created||Date.now(),updated:Date.now()});
+    msg.className="msg";msg.textContent=`已儲存 ✓ ${cls} ${dk.d} ${ylbl(paper)}，共 ${n} 人`;cancelP();fillRoster();$("fpMsg").textContent=`已儲存 ✓ ${cls} ${dk.d} ${ylbl(paper)}，共 ${n} 人`}
+  catch(e){bad(msg,errText(e))}
+  $("fpSave").disabled=!(DB&&CANW)}
+function renderEntryList(){
+  const rows=[...DBM.map(m=>({...m,type:"m"})),...DBP.map(p=>({...p,type:"p"}))].sort((a,b)=>(b.updated||0)-(a.updated||0));
+  const can=DB&&CANW;
+  $("entryList").innerHTML=`<thead><tr><th>類型</th><th>班級</th><th>內容</th><th>日期</th><th class="r">${can?"":"　"}</th></tr></thead><tbody>`+(rows.length?rows.map(r=>{
+    let body;
+    if(r.type==="m")body=`${r.cn||""} ${r.en} · <b class="num">${r.t}</b> 分${r.l!=null&&r.r!=null?` <span class="muted tiny">（聽 ${r.l}／讀 ${r.r}）</span>`:""}`;
+    else{const vs=Object.values(r.scores||{}).filter(v=>typeof v==="number");body=`${ylbl(r.paper)} · ${vs.length} 人 · 平均 <b class="num">${vs.length?r1(avg(vs)):"—"}</b>`}
+    return `<tr><td>${r.type==="m"?`<span class="tag">${r.makeup?"補考":"模擬考"}</span>`:`<span class="tag p">練習</span>`}</td><td class="clsTag">${r.cls}</td><td>${body}</td><td class="num">${r.date}</td><td class="r">${can?`<button class="btn ghost sm" data-act="edit" data-type="${r.type}" data-id="${r.id}">修改</button> <button class="btn danger sm" data-act="del" data-type="${r.type}" data-id="${r.id}">刪除</button>`:""}</td></tr>`}).join("")
+    :`<tr><td colspan="5" class="empty">還沒有網頁輸入的成績。用上面的表單輸入後，會出現在這裡。</td></tr>`)+"</tbody>"}
+function entryAct(b){const {act,type,id}=b.dataset;
+  if(act==="edit"){
+    if(type==="m"){const m=DBM.find(x=>x.id===id);if(!m)return;$("fmCls").value=m.cls;fillMock((m.cn||"")+"|"+m.en);$("fmMsg").className="msg";$("fmMsg").textContent="改好分數後按「儲存這班成績」"}
+    else{const p=DBP.find(x=>x.id===id);if(!p)return;$("fpCls").value=p.cls;$("fpD").value=p.date;
+      if(PAPERS.includes(p.paper)){$("fpPaper").value=p.paper;$("fpCustomL").hidden=true}else{$("fpPaper").value="__c";$("fpCustomL").hidden=false;$("fpCustom").value=p.paper}
+      fillRoster(p.scores);editP=id;$("fpEditing").hidden=false;$("fpEditing").textContent=`正在修改：${p.cls} ${p.date} ${ylbl(p.paper)}`;$("fpCancel").hidden=false;$("fpD").scrollIntoView({block:"center",behavior:"smooth"})}
+    return}
+  if(act==="del"){
+    if(!b.classList.contains("arm")){b.classList.add("arm");b.textContent="確定刪除？";setTimeout(()=>{if(b.isConnected){b.classList.remove("arm");b.textContent="刪除"}},4000);return}
+    b.disabled=true;b.textContent="刪除中…";
+    DB.collection(type==="m"?"mock":"practice").doc(id).delete().catch(()=>{b.disabled=false;b.classList.remove("arm");b.textContent="刪除失敗，再試一次"})}
+}
+async function startDb(){
+  const note=$("dbNote"),setNote=(ok,b,t)=>{note.className="notice"+(ok?" done":"");note.innerHTML=`<b>${b}</b><span>${t}</span>`};
+  const W=()=>{["fmSave","fpSave"].forEach(id=>$(id).disabled=!(DB&&CANW));renderEntryList()};
+  if(!(window.claude&&window.claude.use)){DB=null;setNote(false,"這裡無法儲存","輸入成績的功能只能在 Claude 上的這個網頁使用；這裡只會顯示已匯入的成績。");W();return}
+  DB=await window.claude.use("db");const user=await window.claude.use("user");
+  if(!DB){setNote(false,"這裡無法儲存","請登入 Claude 後再打開這個網頁，才能輸入成績。");W();return}
+  const cw=user?await user.can("data.write"):null;CANW=cw!==false;
+  if(!CANW)setNote(false,"只能檢視","你目前只有檢視權限，無法輸入成績。");else setNote(true,"已連線","輸入的成績會立刻出現在其他分頁，也會一直保留。");
+  W();
+  const got={m:false,p:false};let stale=false;
+  const timer=setTimeout(()=>{if(!(got.m&&got.p)){stale=true;setNote(false,"資料還沒連上","網頁輸入的成績可能還沒顯示，請稍候或重新整理。")}},10000);
+  const on=(col,key,fn)=>DB.collection(col).onSnapshot(snap=>{
+      fn(snap.docs.map(d=>({id:d.id,...cleanObj(d.data()||{})})));
+      if(!snap.metadata.fromCache){got[key]=true;if(got.m&&got.p){clearTimeout(timer);if(stale&&CANW){stale=false;setNote(true,"已連線","輸入的成績會立刻出現在其他分頁，也會一直保留。")}}}
+      build();render();if(state.view==="entry")refreshStuLabels()},
+    err=>{clearTimeout(timer);if(err&&(err.code==="revoked"||err.code==="not_granted")){DB=null;W()}setNote(false,"資料讀取中斷","網頁輸入的成績暫時無法更新，請重新整理頁面。")});
+  on("mock","m",d=>{DBM=d});on("practice","p",d=>{DBP=d.filter(x=>typeof x.k==="number")});
+}
+
+function renderSum(){const nt=tested(S).length,na=S.filter(s=>s.cat==="abs").length,nm=S.filter(s=>s.mk).length;
+ $("sum").textContent=`${classes.length} 個班 · ${S.length} 位學生 · 2026/11/7 英檢模擬考已考 ${nt} 人${nm?`（含補考 ${nm}）`:""}${na?`，待補考 ${na}`:""}`;}
+viewFromHash();initEntry();render();startDb();
+</script>
+
+</body>
+</html>
